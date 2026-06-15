@@ -1,4 +1,11 @@
+'''
+		Collector.py is the local api endpoint for PP. It uses TAG_IDS to filter for markets. TOPICS will be handled in a seperate data filtering program.
+		It is useful to have an understanding of the format of polymarket markets. Each Market{ has events{ }}. Each event{has trades}.  
+'''
+
+
 import requests
+from http.client import RemoteDisconnected
 from py_clob_client.client import ClobClient, OrderBookSummary
 from py_clob_client.clob_types import BookParams
 from typing import Dict, List
@@ -12,9 +19,9 @@ BASE_URL_GAMMA = "https://gamma-api.polymarket.com/"
 BASE_URL_CLOB = "https://clob.polymarket.com/"
 BASE_URL_DATA = "https://data-api.polymarket.com/"
 
-BASE_TOPICS_LIST = ["iran", "israel"]
+#BASE_TOPICS_LIST = ["iran", "israel"]
 
-BASE_PATH = 'C:/Users/holde/Documents/Engineering/Projects/PalymarketCashMoneyRecords'
+BASE_PATH = 'C:/Users/holde/Documents/Engineering/Projects/Polymarket_Parasite'
 
 TAG_IDS = {
 	"politics": "2",
@@ -30,6 +37,10 @@ class Gamma_API:
 		self.session = requests.Session()
 
 	def get_markets(self, tag_id: str, limit: int = 50, offset: int = 0) -> List[Dict]:
+		'''
+		Definition:
+		Params: 
+		'''
 		resp = self.session.get(
 			f"{BASE_URL_GAMMA}events?",
 			params = {
@@ -138,7 +149,7 @@ class Data_API: #Positions, activity, history
 
 
 	
-def controller():
+def controller(file_name : str):
 	Gamma = Gamma_API()
 	Data = Data_API()
 
@@ -161,16 +172,29 @@ def controller():
 	print(f"Fetched {len(condition_ids)} events")
 
 	trades = []
+	fetch_counter = 0
 
 	print("\nFetching trades...\n")
+
 	for conditionId in condition_ids:
-		trades.append(Data.get_trades(conditionId=conditionId, limit=1000))
+		try:
+			trades.append(Data.get_trades(conditionId=conditionId, limit=1000))
+			fetch_counter += 1
+		except RemoteDisconnected as e:
+			print(f"EXCEPTION: {e}\nCONDITION_ID:{conditionId}")
+			continue
+			
+		if fetch_counter % 1000 == 0:
+			print(f"Fetched trades for {fetch_counter} events")
+
+
 
 	#trades = Data.get_trades(market= [event["conditionId"] for event in condition_ids])
 
-	with open(f"{BASE_PATH}/tests/trades.json", "w") as f:
+	with open(f"{BASE_PATH}/data/{os.path.splitext(file_name)[0]}.json", "w") as f:
 	    	json.dump(trades, f, indent = 4)
 
 	print(f"Fetched {len(trades)}. \n")
+	print(f"\n{random.choice(freedom)} \n")
 
 

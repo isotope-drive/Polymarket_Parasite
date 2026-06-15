@@ -1,18 +1,27 @@
-import pandas as pd
-import json
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import os
+import parquet_manager
 from collector import BASE_PATH
 
-with open(f"{BASE_PATH}/tests/trades.json") as f:
-    raw = json.load(f)  
 
-rows = []
-for event_id, trades in enumerate(raw):
-    for trade_idx, trade in enumerate(trades):
-        rows.append({"event_id": event_id, "trade_index": trade_idx, **trade})
 
-df = pd.DataFrame(rows)
+def clean_columns(df : pd.DataFrame):
+	print("\nCleaning Columns\n")
 
-print(df.head())
-print(df.memory_usage())
+	before_memory = df.memory_usage().sum()
 
-df.to_parquet(path=f"{BASE_PATH}/data/dataframe.parquet")
+	df = df.drop(columns = ['icon','bio','profileImage','profileImageOptimized'])
+    
+	after_memory = df.memory_usage().sum()
+
+	delta = before_memory-after_memory
+
+	print(f"Original: {before_memory/1_000_000}Mb\n"
+	f"Cleaned: {after_memory/1_000_000}Mb\n"
+	f"Delta: {delta/1_000_000}Mb\n")
+
+	return df
+
+
+    
